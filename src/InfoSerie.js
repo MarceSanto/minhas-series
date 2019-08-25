@@ -4,10 +4,13 @@ import { Redirect } from 'react-router-dom'
 import { Badge } from 'reactstrap'
 
 const InfoSerie = ({ match }) => {
-  const [form, setForm] = useState({})
+  const [form, setForm] = useState({
+    name: ''
+  })
   const [success, setSuccess] = useState(false)
   const [mode, setMode] = useState('INFO')
   const [genres, setGenres] = useState([])
+  const [genreId, setGenreId] = useState('')
 
   const [data, setData] = useState({})
 
@@ -25,8 +28,14 @@ const InfoSerie = ({ match }) => {
       .get('/api/genres')
       .then(res => {
         setGenres(res.data.data)
+        const genres = res.data.data
+        const encontrado = genres.find(value => data.genre === value.name)
+        if(encontrado) {
+          setGenreId(encontrado.id)
+          
+        }
       })
-  }, [])
+  }, [data])
 
   // custom header
   const masterHeader = {
@@ -39,7 +48,9 @@ const InfoSerie = ({ match }) => {
   }
 
 
-
+  const onChangeGenre = evt => {
+    setGenreId(evt.target.value)
+  }
   const onChange = field => evt => {
     setForm({
       ...form,
@@ -47,7 +58,7 @@ const InfoSerie = ({ match }) => {
     })
   }
 
-  const  seleciona = value => {
+  const  seleciona = value => () => {
     setForm({
       ...form,
       status: value
@@ -56,7 +67,10 @@ const InfoSerie = ({ match }) => {
 
 
   const save = () => {
-    axios.put('/api/series/' + match.params.id, form)
+    axios.put('/api/series/' + match.params.id, {
+      ...form,
+      genre_id: genreId
+    })
       .then(res => {
         setSuccess(true)
       })
@@ -78,8 +92,8 @@ const InfoSerie = ({ match }) => {
               <div className='col-8'>
                 <h1 className='font-weight-light text-white'>{data.name}</h1>
                 <div className='lead text-white' >
-                  <Badge color='success'>Assistido</Badge>
-                  <Badge color='warning'>Para assistir</Badge>
+                  { data.status === 'ASSISTIDO' && <Badge color='success'>Assistido</Badge>}
+                  { data.status === 'PARA_ASSISTIR' && <Badge color='warning'>Para assistir</Badge>}
                   Gênero: {data.genre}
                 </div>
               </div>
@@ -88,7 +102,7 @@ const InfoSerie = ({ match }) => {
 
         </div>
       </header>
-      <div>
+      <div className='container'>
         <button className='btn btn-primary' onClick={() => setMode('EDIT')}>Editar</button>
       </div>
       {
@@ -107,20 +121,20 @@ const InfoSerie = ({ match }) => {
             </div>
             <div className='form-group'>
               <label htmlFor='name'>Gênero</label>
-              <select className='form-control' onChange={onChange('genre_id')}>
-                { genres.map((genre) => <option key={genre.id} select={genre.id === form.genre} value={genre.id}>{genre.name}</option>) }
+              <select className='form-control' onChange={onChangeGenre} value={genreId}>
+                { genres.map((genre) => <option key={genre.id} value={genre.id}>{genre.name}</option>) }
               </select>
             </div>
             
 
             <div className='form-check'>
-              <input className='form-check-input' type='radio' name='status' id='assistido' value='ASSITIDO' checked onClick={seleciona('ASSISTIDO')} />
+              <input className='form-check-input' type='radio' checked={form.status === 'ASSITIDO'} name='status' id='assistido' value='ASSITIDO' onChange={seleciona('ASSISTIDO')} />
                 <label className='form-check-label' htmlFor='assistido'>
                   Assistido
                 </label>
               </div>
               <div className='form-check'>
-                <input className='form-check-input' type='radio' name='status' id='paraAssistir' value='PARA_ASSISTIR' onClick={seleciona('PARA_ASSISTIR')}/>
+                <input className='form-check-input' type='radio' checked={form.status === 'PARA_ASSISTIR'} name='status' id='paraAssistir' value='PARA_ASSISTIR' onChange={seleciona('PARA_ASSISTIR')}/>
                   <label className='form-check-label' htmlFor='paraAssistir'>
                     Para assistir
                   </label>
